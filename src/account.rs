@@ -82,3 +82,91 @@ impl AccountOutput {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_deposit_and_withdraw() {
+        let mut account = Account::new();
+        account.deposit(Decimal::from_str("10.0").unwrap());
+
+        assert_eq!(account.available, Decimal::from_str("10.0").unwrap());
+        assert_eq!(account.total(), Decimal::from_str("10.0").unwrap());
+
+        let result = account.withdraw(Decimal::from_str("5.0").unwrap());
+        assert!(result);
+        assert_eq!(account.available, Decimal::from_str("5.0").unwrap());
+    }
+
+    #[test]
+    fn test_withdraw_insufficient_funds() {
+        let mut account = Account::new();
+        account.deposit(Decimal::from_str("5.0").unwrap());
+
+        let result = account.withdraw(Decimal::from_str("10.0").unwrap());
+        assert!(!result);
+        assert_eq!(account.available, Decimal::from_str("5.0").unwrap());
+    }
+
+    #[test]
+    fn test_hold_and_release_funds() {
+        let mut account = Account::new();
+        account.deposit(Decimal::from_str("10.0").unwrap());
+
+        account.hold_funds(Decimal::from_str("3.0").unwrap());
+        assert_eq!(account.available, Decimal::from_str("7.0").unwrap());
+        assert_eq!(account.held, Decimal::from_str("3.0").unwrap());
+        assert_eq!(account.total(), Decimal::from_str("10.0").unwrap());
+
+        account.release_funds(Decimal::from_str("2.0").unwrap());
+        assert_eq!(account.available, Decimal::from_str("9.0").unwrap());
+        assert_eq!(account.held, Decimal::from_str("1.0").unwrap());
+    }
+
+    #[test]
+    fn test_chargeback_locks_account() {
+        let mut account = Account::new();
+        account.deposit(Decimal::from_str("10.0").unwrap());
+        account.hold_funds(Decimal::from_str("5.0").unwrap());
+
+        account.chargeback(Decimal::from_str("5.0").unwrap());
+
+        assert_eq!(account.available, Decimal::from_str("5.0").unwrap());
+        assert_eq!(account.held, Decimal::from_str("0").unwrap());
+        assert_eq!(account.total(), Decimal::from_str("5.0").unwrap());
+        assert!(account.locked);
+    }
+
+    #[test]
+    fn test_locked_account_blocks_operations() {
+        let mut account = Account::new();
+        account.deposit(Decimal::from_str("10.0").unwrap());
+        account.hold_funds(Decimal::from_str("5.0").unwrap());
+        account.chargeback(Decimal::from_str("5.0").unwrap());
+
+        // Operations should be blocked on locked account
+        account.deposit(Decimal::from_str("1.0").unwrap());
+        assert_eq!(account.available, Decimal::from_str("5.0").unwrap()); // No change
+
+        let withdraw_result = account.withdraw(Decimal::from_str("1.0").unwrap());
+        assert!(!withdraw_result);
+    }
+
+    #[test]
+    fn test_account_output_formatting() {
+        let mut account = Account::new();
+        account.deposit(Decimal::from_str("10.123456").unwrap());
+        account.hold_funds(Decimal::from_str("2.5678").unwrap());
+
+        let output = AccountOutput::from_account(123, &account);
+
+        assert_eq!(output.client, 123);
+        assert_eq!(output.available, Decimal::from_str("7.5557").unwrap());
+        assert_eq!(output.held, Decimal::from_str("2.5678").unwrap());
+        assert_eq!(output.total, Decimal::from_str("10.1235").unwrap());
+        assert!(!output.locked);
+    }
+}
