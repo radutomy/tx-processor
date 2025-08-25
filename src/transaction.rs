@@ -22,7 +22,6 @@ pub struct TransactionRecord {
     pub amount: Option<Decimal>,
 }
 
-// This is what we store for each transaction to enable disputes
 #[derive(Debug, Clone)]
 pub struct StoredTransaction {
     pub client: u16,

@@ -1,9 +1,9 @@
 use anyhow::{Context, Result};
 use std::{env, fs::File};
 
-mod account;
-mod engine;
-mod transactions;
+pub mod account;
+pub mod engine;
+pub mod transaction;
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
