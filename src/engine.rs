@@ -28,10 +28,7 @@ impl PaymentEngine {
     pub fn process_transaction(&mut self, record: TransactionRecord) -> Result<()> {
         record.validate().context("Invalid transaction")?;
 
-        let account = self
-            .accounts
-            .entry(record.client)
-            .or_insert_with(Account::new);
+        let account = self.accounts.entry(record.client).or_default();
 
         match record.tx_type {
             TransactionType::Deposit => {
@@ -107,6 +104,12 @@ impl PaymentEngine {
             .iter()
             .map(|(&client, account)| AccountOutput::from_account(client, account))
             .collect()
+    }
+}
+
+impl Default for PaymentEngine {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
