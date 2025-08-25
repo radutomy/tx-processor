@@ -3,7 +3,14 @@ use crate::transaction::{StoredTransaction, TransactionRecord, TransactionType};
 use anyhow::{Context, Result};
 use std::collections::HashMap;
 
+/// The core payment processing engine that manages account states and transaction history.
+/// In a real world application, this would likely be backed by a persistent data store,
+/// but for demo purposes we use in-memory storage. With more time, I would implement
+/// this with an RDBMS backend...
 pub struct PaymentEngine {
+    /// A HashMap is probably the best structure for in-memory calculation
+    /// because we need to frequently look for accounts using the ID.
+    /// This will yield a constant time lookup, which is probably the best we can do.
     accounts: HashMap<u16, Account>,
     transactions: HashMap<u32, StoredTransaction>,
 }
@@ -16,6 +23,8 @@ impl PaymentEngine {
         }
     }
 
+    /// We want to decouple the file reading/parsing from the actual processing logic,
+    /// this accepts a parsed transaction record and applies it to the appropriate account.
     pub fn process_transaction(&mut self, record: TransactionRecord) -> Result<()> {
         record.validate().context("Invalid transaction")?;
 

@@ -8,6 +8,13 @@ pub struct Account {
     pub locked: bool,
 }
 
+/// Notes on chargebacks and locking:
+/// - Multiple transactions can be disputed and later charged back. On the first chargeback
+///   we lock the account (per spec), but still allow chargebacks to complete for transactions
+///   that were already under dispute before the lock.
+/// - We don’t track a separate list or count of chargebacks. Locking is a boolean that becomes
+///   true after the first chargeback. Per-transaction state is tracked via the disputed flag,
+///   and a chargeback clears that flag to prevent double-chargeback of the same tx.
 impl Account {
     pub fn new() -> Self {
         Self::default()
